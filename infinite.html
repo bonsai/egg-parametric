@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>卵インフィニティ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; touch-action: none; }
+        #c { display: block; width: 100vw; height: 100vh; }
+        #ui { position: fixed; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; z-index: 10; }
+        .btn { padding: 14px 28px; border: none; border-radius: 50px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+        .rec { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; }
+        .rec:active { transform: scale(0.95); }
+        .dl { background: rgba(255,255,255,0.15); color: white; backdrop-filter: blur(10px); display: none; }
+        #hud { position: fixed; top: 20px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.6); font-family: monospace; font-size: 14px; z-index: 10; }
+        #progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #ffd93d, #ff9a3c); z-index: 20; transition: width 0.1s; }
+    </style>
+</head>
+<body>
+    <div id="progress"></div>
+    <div id="hud">15s インフィニティ卵</div>
+    <canvas id="c"></canvas>
+    <div id="ui">
+        <button class="btn rec" id="recBtn" onclick="startRec()">● 録画</button>
+        <button class="btn dl" id="dlBtn" onclick="download()">↓ DL</button>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+    (() => {
+        const W = 1080, H = 1920; // 9:16
+        const DUR = 15, FPS = 30;
+
+        const canvas = document.getElementById('c');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a18);
+
+        const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
+        camera.position.set(0, 2, 6);
+
+        // Lights
+        scene.add(new THREE.AmbientLight(0x404060, 0.6));
+        const dl1 = new THREE.DirectionalLight(0xffffff, 1.2);
+        dl1.position.set(3, 8, 5);
+        scene.add(dl1);
+        const dl2 = new THREE.DirectionalLight(0xffd93d, 0.4);
+        dl2.position.set(-4, 3, -3);
+        scene.add(dl2);
+        const pl = new THREE.PointLight(0xff6b9d, 0.6, 15);
+        pl.position.set(0, -2, 4);
+        scene.add(pl);
+
+        // Egg
+        function makeEgg(radius, height, sharp, segs) {
+            const v = [], idx = [];
+            for (let i = 0; i <= segs; i++) {
+                const phi = Math.PI * i / segs;
+                for (let j = 0; j < segs; j++) {
+                    const th = 2 * Math.PI * j / segs;
+                    let r = radius, y = height * Math.cos(phi);
+                    if (y > 0) r *= 1.0 - (y / height) * sharp;
+                    v.push(r * Math.sin(phi) * Math.cos(th), y, r * Math.sin(phi) * Math.sin(th));
+                }
+            }
+            for (let i = 0; i < segs; i++)
+                for (let j = 0; j < segs; j++) {
+                    const a = i*segs+j, b = i*segs+(j+1)%segs;
+                    const c = (i+1)*segs+(j+1)%segs, d = (i+1)*segs+j;
+                    idx.push(a,b,c, a,c,d);
+                }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+            geo.setIndex(idx);
+            geo.computeVertexNormals();
+            return geo;
+        }
+
+        const eggs = [];
+        const colors = [0xf5e6d3, 0xffd93d, 0xff6b9d, 0x6bcb77, 0x4ecdc4, 0xa8e6cf];
+
+        for (let i = 0; i < 6; i++) {
+            const r = 0.3 + Math.random() * 0.5;
+            const h = r * (1.2 + Math.random() * 0.4);
+            const geo = makeEgg(r, h, 0.25 + Math.random() * 0.2, 24);
+            const mat = new THREE.MeshStandardMaterial({
+                color: colors[i],
+                roughness: 0.3 + Math.random() * 0.3,
+                metalness: 0.1,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.userData = {
+                baseY: -3 + i * 1.5,
+                baseX: (Math.random() - 0.5) * 3,
+                speed: 0.5 + Math.random() * 1.0,
+                phase: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 2,
+            };
+            mesh.position.set(mesh.userData.baseX, mesh.userData.baseY, 0);
+            scene.add(mesh);
+            eggs.push(mesh);
+        }
+
+        // Particles
+        const pGeo = new THREE.BufferGeometry();
+        const pCount = 200;
+        const pPos = new Float32Array(pCount * 3);
+        for (let i = 0; i < pCount; i++) {
+            pPos[i*3] = (Math.random() - 0.5) * 12;
+            pPos[i*3+1] = (Math.random() - 0.5) * 20;
+            pPos[i*3+2] = (Math.random() - 0.5) * 8;
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({ color: 0xffd93d, size: 0.05, transparent: true, opacity: 0.6 });
+        scene.add(new THREE.Points(pGeo, pMat));
+
+        // Animation
+        function animate(t) {
+            const time = t / 1000;
+            eggs.forEach(e => {
+                const d = e.userData;
+                e.position.y = d.baseY + Math.sin(time * d.speed + d.phase) * 0.8;
+                e.position.x = d.baseX + Math.sin(time * d.speed * 0.7 + d.phase) * 0.3;
+                e.rotation.y += d.rotSpeed * 0.01;
+                e.rotation.x = Math.sin(time * 0.5 + d.phase) * 0.2;
+            });
+
+            // Camera gentle sway
+            camera.position.x = Math.sin(time * 0.3) * 0.5;
+            camera.position.y = 2 + Math.sin(time * 0.2) * 0.5;
+            camera.lookAt(0, 0, 0);
+
+            // Color shift on background
+            const hue = (time * 0.02) % 1;
+            scene.background.setHSL(hue, 0.3, 0.05);
+
+            pl.color.setHSL((hue + 0.5) % 1, 0.8, 0.5);
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        // Recording
+        let blob = null;
+        window.startRec = async function() {
+            const btn = document.getElementById('recBtn');
+            const bar = document.getElementById('progress');
+            btn.textContent = '● 録画中...';
+            btn.disabled = true;
+            bar.style.width = '0%';
+
+            // Save original size
+            const origW = window.innerWidth, origH = window.innerHeight;
+            renderer.setSize(W, H);
+            camera.aspect = W / H;
+            camera.updateProjectionMatrix();
+
+            const stream = canvas.captureStream(FPS);
+            const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+            const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12000000 });
+            const chunks = [];
+            rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+            const done = new Promise(res => { rec.onstop = () => res(new Blob(chunks, { type: 'video/webm' })); });
+            rec.start();
+
+            const start = performance.now();
+            await new Promise(resolve => {
+                (function loop() {
+                    const t = (performance.now() - start) / 1000;
+                    bar.style.width = Math.min(t / DUR * 100, 100) + '%';
+                    if (t >= DUR) { rec.stop(); resolve(); }
+                    else requestAnimationFrame(loop);
+                })();
+            });
+
+            blob = await done;
+            renderer.setSize(origW, origH);
+            camera.aspect = origW / origH;
+            camera.updateProjectionMatrix();
+
+            btn.textContent = '● 録画';
+            btn.disabled = false;
+            document.getElementById('dlBtn').style.display = 'inline-block';
+        };
+
+        window.download = function() {
+            if (!blob) return;
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'egg_infinite_15s.webm';
+            a.click();
+        };
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    })();
+    </script>
+</body>
+</html>
