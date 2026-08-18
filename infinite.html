@@ -3,65 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>卵パラメトリック</title>
+    <title>卵物理シミュレーション</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; touch-action: none; font-family: 'Segoe UI', system-ui, sans-serif; }
         #c { display: block; width: 100vw; height: 100vh; }
 
-        /* Toggle button */
         #toggle { position: fixed; top: 16px; right: 16px; z-index: 30; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.2rem; cursor: pointer; backdrop-filter: blur(8px); }
-        #toggle:active { transform: scale(0.9); }
 
-        /* Panel */
-        #panel { position: fixed; top: 0; right: 0; width: 340px; max-width: 85vw; height: 100vh; background: rgba(10,10,24,0.92); backdrop-filter: blur(20px); border-left: 1px solid rgba(255,255,255,0.08); z-index: 20; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        #panel { position: fixed; top: 0; right: 0; width: 340px; max-width: 85vw; height: 100vh; background: rgba(10,10,24,0.92); backdrop-filter: blur(20px); border-left: 1px solid rgba(255,255,255,0.08); z-index: 20; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         #panel.open { transform: translateX(0); }
         .p-header { padding: 20px 20px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
         .p-header h2 { font-size: 1.1rem; color: #ffd93d; margin-bottom: 4px; }
         .p-header p { font-size: 0.78rem; color: #666; }
         .p-body { padding: 16px 20px; flex: 1; }
 
+        .section-label { font-size: 0.7rem; color: #555; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+
+        /* Type selector */
+        .type-row { display: flex; gap: 8px; margin-bottom: 16px; }
+        .type-btn { flex: 1; padding: 14px 8px; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.08); border-radius: 12px; color: #aaa; font-size: 0.8rem; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .type-btn .icon { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+        .type-btn:hover { border-color: rgba(255,217,61,0.3); }
+        .type-btn.active { background: rgba(255,217,61,0.12); border-color: #ffd93d; color: #ffd93d; }
+        .type-btn:active { transform: scale(0.95); }
+
         /* Param card */
-        .param { margin-bottom: 16px; padding: 14px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.2s; }
-        .param:hover { border-color: rgba(255,217,61,0.2); }
-        .param-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .param-label { font-size: 0.85rem; color: #ccc; }
-        .param-label small { color: #666; font-size: 0.75rem; }
-        .param-val { font-family: 'SF Mono', monospace; font-size: 0.85rem; color: #ffd93d; min-width: 40px; text-align: right; }
+        .param { margin-bottom: 14px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); }
+        .param-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .param-label { font-size: 0.82rem; color: #ccc; }
+        .param-val { font-family: 'SF Mono', monospace; font-size: 0.82rem; color: #ffd93d; }
         .param input[type="range"] { width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.1); outline: none; -webkit-appearance: none; }
-        .param input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #ffd93d; cursor: pointer; box-shadow: 0 0 10px rgba(255,217,61,0.3); transition: transform 0.15s; }
-        .param input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); }
-        .param-range { display: flex; justify-content: space-between; font-size: 0.7rem; color: #444; margin-top: 4px; }
+        .param input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #ffd93d; cursor: pointer; box-shadow: 0 0 8px rgba(255,217,61,0.3); }
+        .param-range { display: flex; justify-content: space-between; font-size: 0.68rem; color: #444; margin-top: 3px; }
 
         /* Presets */
-        .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 16px; }
-        .preset { padding: 10px 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #aaa; font-size: 0.75rem; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+        .preset { padding: 8px 4px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #aaa; font-size: 0.72rem; text-align: center; cursor: pointer; transition: all 0.2s; }
         .preset:hover, .preset.active { background: rgba(255,217,61,0.12); border-color: #ffd93d; color: #ffd93d; }
-        .preset:active { transform: scale(0.95); }
 
-        /* Bottom bar */
         .p-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06); }
         .btn-row { display: flex; gap: 8px; }
         .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .btn-rec { background: linear-gradient(135deg, #ff4444, #cc0000); color: white; }
         .btn-rec:disabled { opacity: 0.5; }
         .btn-dl { background: rgba(255,255,255,0.08); color: #ccc; display: none; }
-        .btn-dl:hover { background: rgba(255,255,255,0.15); }
-        .btn-share { background: rgba(255,217,61,0.15); color: #ffd93d; }
 
-        /* Progress */
         #progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #ffd93d, #ff6b9d); z-index: 25; transition: width 0.1s; width: 0%; }
-        #progress.active { animation: pulse 1s infinite; }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
-
-        /* Status toast */
-        #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 30; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 10px 20px; border-radius: 20px; font-size: 0.85rem; z-index: 30; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
         #toast.show { opacity: 1; }
 
-        /* Mobile */
-        @media (max-width: 480px) {
-            #panel { width: 100vw; }
-        }
+        @media (max-width: 480px) { #panel { width: 100vw; } }
     </style>
 </head>
 <body>
@@ -72,71 +64,87 @@
 
     <div id="panel">
         <div class="p-header">
-            <h2>卵パラメトリック</h2>
-            <p>6つのパラメータで調整 → リアルタイム反映</p>
+            <h2>物理シミュレーション</h2>
+            <p>オブジェクトと物理パラメータを選択</p>
         </div>
         <div class="p-body">
-            <div class="presets">
-                <div class="preset active" onclick="applyPreset('calm')">穏やか</div>
-                <div class="preset" onclick="applyPreset('vj')">VJ</div>
-                <div class="preset" onclick="applyPreset('rave')">レイヴ</div>
-                <div class="preset" onclick="applyPreset('zen')">禅</div>
-                <div class="preset" onclick="applyPreset('pop')">ポップ</div>
-                <div class="preset" onclick="applyPreset('dark')">ダーク</div>
-            </div>
-
-            <div class="param" id="p-count">
-                <div class="param-top">
-                    <span class="param-label">🥚 卵の数 <small>数</small></span>
-                    <span class="param-val" id="v-count">6</span>
+            <div class="section-label">タイプ選択</div>
+            <div class="type-row">
+                <div class="type-btn active" data-type="egg" onclick="setType(this)">
+                    <span class="icon">🥚</span>卵
                 </div>
-                <input type="range" id="s-count" min="1" max="20" step="1" value="6" oninput="onParam()">
-                <div class="param-range"><span>1</span><span>20</span></div>
+                <div class="type-btn" data-type="bubble" onclick="setType(this)">
+                    <span class="icon">🫧</span>シャボン玉
+                </div>
+                <div class="type-btn" data-type="ball" onclick="setType(this)">
+                    <span class="icon">⚽</span>ボール
+                </div>
             </div>
 
-            <div class="param" id="p-size">
+            <div class="section-label">プリセット</div>
+            <div class="presets">
+                <div class="preset active" onclick="applyPreset('bounce')">弾む</div>
+                <div class="preset" onclick="applyPreset('float')">浮遊</div>
+                <div class="preset" onclick="applyPreset('drop')">落下</div>
+                <div class="preset" onclick="applyPreset('pool)">プール</div>
+                <div class="preset" onclick="applyPreset('chaos)">カオス</div>
+                <div class="preset" onclick="applyPreset('gentle')">優しい</div>
+            </div>
+
+            <div class="section-label">物理パラメータ</div>
+
+            <div class="param">
                 <div class="param-top">
-                    <span class="param-label">📐 サイズ <small>倍率</small></span>
+                    <span class="param-label">📦 数</span>
+                    <span class="param-val" id="v-count">8</span>
+                </div>
+                <input type="range" id="s-count" min="1" max="30" step="1" value="8" oninput="onParam()">
+                <div class="param-range"><span>1</span><span>30</span></div>
+            </div>
+
+            <div class="param">
+                <div class="param-top">
+                    <span class="param-label">⚖️ 重力</span>
+                    <span class="param-val" id="v-gravity">9.8</span>
+                </div>
+                <input type="range" id="s-gravity" min="0" max="30" step="0.5" value="9.8" oninput="onParam()">
+                <div class="param-range"><span>宙浮き</span><span>強 gravity</span></div>
+            </div>
+
+            <div class="param">
+                <div class="param-top">
+                    <span class="param-label">🎾 弾性</span>
+                    <span class="param-val" id="v-bounce">0.7</span>
+                </div>
+                <input type="range" id="s-bounce" min="0" max="1" step="0.05" value="0.7" oninput="onParam()">
+                <div class="param-range"><span>しんなり</span><span>超弾む</span></div>
+            </div>
+
+            <div class="param">
+                <div class="param-top">
+                    <span class="param-label">🌀 摩擦</span>
+                    <span class="param-val" id="v-friction">0.3</span>
+                </div>
+                <input type="range" id="s-friction" min="0" max="1" step="0.05" value="0.3" oninput="onParam()">
+                <div class="param-range"><span>ツルツル</span><span>ベタつき</span></div>
+            </div>
+
+            <div class="param">
+                <div class="param-top">
+                    <span class="param-label">💨 風</span>
+                    <span class="param-val" id="v-wind">0.0</span>
+                </div>
+                <input type="range" id="s-wind" min="-5" max="5" step="0.2" value="0" oninput="onParam()">
+                <div class="param-range"><span>← 左</span><span>右 →</span></div>
+            </div>
+
+            <div class="param">
+                <div class="param-top">
+                    <span class="param-label">📐 サイズ</span>
                     <span class="param-val" id="v-size">1.0</span>
                 </div>
-                <input type="range" id="s-size" min="0.3" max="3.0" step="0.1" value="1.0" oninput="onParam()">
-                <div class="param-range"><span>0.3</span><span>3.0</span></div>
-            </div>
-
-            <div class="param" id="p-float">
-                <div class="param-top">
-                    <span class="param-label">🌊 浮遊感 <small>速さ</small></span>
-                    <span class="param-val" id="v-float">0.8</span>
-                </div>
-                <input type="range" id="s-float" min="0.1" max="3.0" step="0.1" value="0.8" oninput="onParam()">
-                <div class="param-range"><span>ゆっくり</span><span>速い</span></div>
-            </div>
-
-            <div class="param" id="p-rotate">
-                <div class="param-top">
-                    <span class="param-label">🔄 回転 <small>速さ</small></span>
-                    <span class="param-val" id="v-rotate">0.5</span>
-                </div>
-                <input type="range" id="s-rotate" min="0.0" max="3.0" step="0.1" value="0.5" oninput="onParam()">
-                <div class="param-range"><span>止める</span><span>速い</span></div>
-            </div>
-
-            <div class="param" id="p-color">
-                <div class="param-top">
-                    <span class="param-label">🎨 色の変化 <small>速さ</small></span>
-                    <span class="param-val" id="v-color">0.5</span>
-                </div>
-                <input type="range" id="s-color" min="0.0" max="3.0" step="0.1" value="0.5" oninput="onParam()">
-                <div class="param-range"><span>固定</span><span>高速</span></div>
-            </div>
-
-            <div class="param" id="p-particle">
-                <div class="param-top">
-                    <span class="param-label">✨ パーティクル <small>量</small></span>
-                    <span class="param-val" id="v-particle">150</span>
-                </div>
-                <input type="range" id="s-particle" min="0" max="500" step="10" value="150" oninput="onParam()">
-                <div class="param-range"><span>なし</span><span>500</span></div>
+                <input type="range" id="s-size" min="0.3" max="3" step="0.1" value="1.0" oninput="onParam()">
+                <div class="param-range"><span>小さめ</span><span>大きめ</span></div>
             </div>
         </div>
 
@@ -153,11 +161,40 @@
     (() => {
         'use strict';
 
-        // ── State ──────────────────────────────────────────────
-        const P = { count: 6, size: 1.0, float: 0.8, rotate: 0.5, color: 0.5, particle: 150 };
         const W = 1080, H = 1920, DUR = 15, FPS = 30;
+        const WALL_L = -5, WALL_R = 5, WALL_B = -8, WALL_T = 10;
+        const FLOOR_Y = WALL_B;
+        const CEIL_Y = WALL_T;
 
-        // ── Three ──────────────────────────────────────────────
+        // ── State ──────────────────────────────────────────────
+        let objType = 'egg';
+        const P = { count: 8, gravity: 9.8, bounce: 0.7, friction: 0.3, wind: 0, size: 1.0 };
+
+        // ── Physics bodies ─────────────────────────────────────
+        let bodies = [];
+
+        class Body {
+            constructor(x, y, r, type) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.r = r;
+                this.mass = r * r;
+                this.rot = Math.random() * Math.PI * 2;
+                this.rotV = (Math.random() - 0.5) * 2;
+                this.type = type;
+                this.mesh = null;
+                this.phase = Math.random() * Math.PI * 2;
+            }
+        }
+
+        function typeProps(type) {
+            if (type === 'bubble') return { bounce: 0.95, friction: 0.05, mass: 0.1, opacity: 0.35, emissive: 0.3 };
+            if (type === 'ball') return { bounce: 0.85, friction: 0.4, mass: 1.5, opacity: 1.0, emissive: 0.0 };
+            return { bounce: 0.7, friction: 0.3, mass: 1.0, opacity: 0.9, emissive: 0.1 }; // egg
+        }
+
+        // ── Three.js ───────────────────────────────────────────
         const canvas = document.getElementById('c');
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -166,29 +203,51 @@
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a18);
 
-        const camera = new THREE.PerspectiveCamera(40, W / H, 0.1, 100);
-        camera.position.set(0, 2, 6);
+        const camera = new THREE.PerspectiveCamera(35, W / H, 0.1, 100);
+        camera.position.set(0, 1, 14);
+        camera.lookAt(0, 1, 0);
 
-        scene.add(new THREE.AmbientLight(0x404060, 0.6));
-        const dl1 = new THREE.DirectionalLight(0xffffff, 1.2);
-        dl1.position.set(3, 8, 5);
-        scene.add(dl1);
-        const dl2 = new THREE.DirectionalLight(0xffd93d, 0.4);
-        dl2.position.set(-4, 3, -3);
-        scene.add(dl2);
-        const pl = new THREE.PointLight(0xff6b9d, 0.6, 15);
-        pl.position.set(0, -2, 4);
+        // Lights
+        scene.add(new THREE.AmbientLight(0x506080, 0.8));
+        const dl = new THREE.DirectionalLight(0xffffff, 1.0);
+        dl.position.set(4, 10, 8);
+        scene.add(dl);
+        const pl = new THREE.PointLight(0xff6b9d, 0.5, 20);
+        pl.position.set(0, -3, 6);
         scene.add(pl);
 
-        // ── Egg builder ────────────────────────────────────────
-        function makeEgg(r, h, sharp, segs) {
-            const v = [], idx = [];
+        // Floor visual
+        const floorGeo = new THREE.PlaneGeometry(14, 1);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x15152a, roughness: 0.8 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.position.set(0, FLOOR_Y - 0.5, -1);
+        scene.add(floor);
+
+        // Wall visual
+        const wallGeo = new THREE.PlaneGeometry(1, 22);
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x15152a, roughness: 0.8 });
+        const wallL = new THREE.Mesh(wallGeo, wallMat);
+        wallL.position.set(WALL_L - 0.5, 1, -1);
+        scene.add(wallL);
+        const wallR = new THREE.Mesh(wallGeo, wallMat);
+        wallR.position.set(WALL_R + 0.5, 1, -1);
+        scene.add(wallR);
+
+        // Ceiling
+        const ceilGeo = new THREE.PlaneGeometry(14, 1);
+        const ceil = new THREE.Mesh(ceilGeo, floorMat);
+        ceil.position.set(0, CEIL_Y + 0.5, -1);
+        scene.add(ceil);
+
+        // ── Mesh builders ──────────────────────────────────────
+        function buildEggGeo(r) {
+            const h = r * 1.4, segs = 16, v = [], idx = [];
             for (let i = 0; i <= segs; i++) {
                 const phi = Math.PI * i / segs;
                 for (let j = 0; j < segs; j++) {
                     const th = 2 * Math.PI * j / segs;
                     let R = r, y = h * Math.cos(phi);
-                    if (y > 0) R *= 1.0 - (y / h) * sharp;
+                    if (y > 0) R *= 1.0 - (y / h) * 0.25;
                     v.push(R * Math.sin(phi) * Math.cos(th), y, R * Math.sin(phi) * Math.sin(th));
                 }
             }
@@ -205,127 +264,278 @@
             return geo;
         }
 
-        const palettes = [
-            [0xf5e6d3, 0xffd93d, 0xff6b9d, 0x6bcb77, 0x4ecdc4, 0xa8e6cf, 0xff8a5c, 0xea5455, 0x2d98da, 0xf8c291],
-            [0xff0055, 0x00ff88, 0x5500ff, 0xffaa00, 0x00aaff, 0xff00aa, 0xaaff00, 0x00ffaa, 0xff5500, 0x55aaff],
-            [0xffffff, 0xdddddd, 0xbbbbbb, 0x999999, 0xf0f0f0, 0xe8e8e8, 0xd0d0d0, 0xc0c0c0, 0xf5f5f5, 0xeaeaea],
-            [0xff6b6b, 0xffa07a, 0xffd93d, 0x98fb98, 0x87ceeb, 0xdda0dd, 0xf0e68c, 0xffb6c1, 0x90ee90, 0xffdab9],
-        ];
+        function buildSphereGeo(r, detail) {
+            return new THREE.SphereGeometry(r, detail || 16, detail || 12);
+        }
 
-        let eggMeshes = [];
-        let particleMesh = null;
+        function makeMesh(body) {
+            const tp = typeProps(body.type);
+            let geo, mat;
 
-        // ── Build scene from params ────────────────────────────
-        function buildScene() {
-            // Remove old eggs
-            eggMeshes.forEach(m => scene.remove(m));
-            eggMeshes = [];
-            if (particleMesh) { scene.remove(particleMesh); particleMesh = null; }
-
-            const { count, size, particle } = P;
-            const pal = palettes[0];
-
-            for (let i = 0; i < count; i++) {
-                const r = (0.25 + Math.random() * 0.4) * size;
-                const h = r * (1.2 + Math.random() * 0.4);
-                const geo = makeEgg(r, h, 0.2 + Math.random() * 0.25, 20);
-                const color = pal[i % pal.length];
-                const mat = new THREE.MeshStandardMaterial({
-                    color, roughness: 0.25 + Math.random() * 0.35, metalness: 0.1,
+            if (body.type === 'egg') {
+                geo = buildEggGeo(body.r);
+                mat = new THREE.MeshStandardMaterial({ color: 0xf5e6d3, roughness: 0.35, metalness: 0.05 });
+            } else if (body.type === 'bubble') {
+                geo = buildSphereGeo(body.r, 20);
+                mat = new THREE.MeshPhysicalMaterial({
+                    color: 0x88ccff, transparent: true, opacity: 0.3,
+                    roughness: 0, metalness: 0, transmission: 0.8,
+                    thickness: 0.5, clearcoat: 1, clearcoatRoughness: 0,
+                    envMapIntensity: 1.5,
                 });
-                const mesh = new THREE.Mesh(geo, mat);
-                const spread = 2 + count * 0.2;
-                mesh.userData = {
-                    baseY: -spread/2 + (i / Math.max(count-1, 1)) * spread,
-                    baseX: (Math.random() - 0.5) * 4,
-                    speed: 0.3 + Math.random() * 1.5,
-                    phase: Math.random() * Math.PI * 2,
-                    rotSpeed: (Math.random() - 0.5) * 2,
-                };
-                mesh.position.set(mesh.userData.baseX, mesh.userData.baseY, 0);
-                scene.add(mesh);
-                eggMeshes.push(mesh);
+            } else {
+                geo = buildSphereGeo(body.r, 16);
+                mat = new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.4, metalness: 0.2 });
             }
 
-            // Particles
-            if (particle > 0) {
-                const pGeo = new THREE.BufferGeometry();
-                const pPos = new Float32Array(particle * 3);
-                for (let i = 0; i < particle; i++) {
-                    pPos[i*3] = (Math.random() - 0.5) * 14;
-                    pPos[i*3+1] = (Math.random() - 0.5) * 24;
-                    pPos[i*3+2] = (Math.random() - 0.5) * 10;
-                }
-                pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-                const pMat = new THREE.PointsMaterial({ color: 0xffd93d, size: 0.06, transparent: true, opacity: 0.5 });
-                particleMesh = new THREE.Points(pGeo, pMat);
-                scene.add(particleMesh);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(body.x, body.y, 0);
+            scene.add(mesh);
+            body.mesh = mesh;
+            return mesh;
+        }
+
+        function removeMeshes() {
+            bodies.forEach(b => { if (b.mesh) scene.remove(b.mesh); });
+            bodies = [];
+        }
+
+        function spawnBodies() {
+            removeMeshes();
+            const { count, size } = P;
+            for (let i = 0; i < count; i++) {
+                const r = (0.3 + Math.random() * 0.4) * size;
+                const x = WALL_L + r + Math.random() * (WALL_R - WALL_L - r * 2);
+                const y = WALL_T - r - Math.random() * 6;
+                const b = new Body(x, y, r, objType);
+                b.vy = -2 - Math.random() * 3;
+                bodies.push(b);
+                makeMesh(b);
             }
         }
 
-        buildScene();
+        spawnBodies();
+
+        // ── Physics step ───────────────────────────────────────
+        const DT = 1 / 60;
+
+        function physicsStep() {
+            const { gravity, bounce, friction, wind } = P;
+
+            for (const b of bodies) {
+                const tp = typeProps(b.type);
+                const effBounce = bounce * tp.bounce;
+                const effFric = friction * tp.friction;
+                const effMass = tp.mass;
+
+                // Gravity + wind
+                b.vy -= gravity * DT;
+                b.vx += wind * DT * 0.5;
+
+                // Air resistance
+                b.vx *= 0.999;
+                b.vy *= 0.999;
+
+                // Move
+                b.x += b.vx * DT;
+                b.y += b.vy * DT;
+
+                // Floor
+                if (b.y - b.r < FLOOR_Y) {
+                    b.y = FLOOR_Y + b.r;
+                    b.vy = -b.vy * effBounce;
+                    b.vx *= (1 - effFric * 0.1);
+                    b.rotV += b.vx * 0.1;
+                }
+                // Ceiling
+                if (b.y + b.r > CEIL_Y) {
+                    b.y = CEIL_Y - b.r;
+                    b.vy = -b.vy * effBounce;
+                }
+                // Walls
+                if (b.x - b.r < WALL_L) {
+                    b.x = WALL_L + b.r;
+                    b.vx = -b.vx * effBounce;
+                    b.rotV += b.vy * 0.05;
+                }
+                if (b.x + b.r > WALL_R) {
+                    b.x = WALL_R - b.r;
+                    b.vx = -b.vx * effBounce;
+                    b.rotV -= b.vy * 0.05;
+                }
+
+                // Rotation
+                b.rot += b.rotV * DT;
+                b.rotV *= 0.99;
+            }
+
+            // Body-body collisions
+            const toRemove = new Set();
+
+            for (let i = 0; i < bodies.length; i++) {
+                if (toRemove.has(i)) continue;
+                for (let j = i + 1; j < bodies.length; j++) {
+                    if (toRemove.has(j)) continue;
+                    const a = bodies[i], b = bodies[j];
+                    const dx = b.x - a.x, dy = b.y - a.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minD = a.r + b.r;
+
+                    if (dist < minD && dist > 0.001) {
+                        const nx = dx / dist, ny = dy / dist;
+                        const overlap = minD - dist;
+                        const totalMass = a.mass + b.mass;
+
+                        // ── Bubble merge (シャボン玉融合) ──
+                        if (a.type === 'bubble' && b.type === 'bubble') {
+                            // Larger absorbs smaller
+                            const [big, small] = a.r >= b.r ? [a, b] : [b, a];
+                            const area = Math.PI * big.r * big.r + Math.PI * small.r * small.r;
+                            const newR = Math.sqrt(area / Math.PI); // 面積保存
+                            const newMass = big.mass + small.mass;
+                            big.r = Math.min(newR, 2.5); // 最大サイズ制限
+                            big.mass = newMass;
+                            big.vx = (big.vx * big.mass + small.vx * small.mass) / newMass;
+                            big.vy = (big.vy * big.mass + small.vy * small.mass) / newMass;
+                            big.rotV += small.rotV * 0.3;
+                            // Rebuild mesh
+                            if (big.mesh) {
+                                scene.remove(big.mesh);
+                                big.mesh = null;
+                                makeMesh(big);
+                            }
+                            // Mark small for removal
+                            if (small.mesh) { scene.remove(small.mesh); small.mesh = null; }
+                            toRemove.add(bodies.indexOf(small));
+                            continue;
+                        }
+
+                        // Separate
+                        a.x -= nx * overlap * (b.mass / totalMass);
+                        a.y -= ny * overlap * (b.mass / totalMass);
+                        b.x += nx * overlap * (a.mass / totalMass);
+                        b.y += ny * overlap * (a.mass / totalMass);
+
+                        // ── Ball extra repulsion (ボール反発) ──
+                        const isBallCollision = a.type === 'ball' && b.type === 'ball';
+
+                        // Elastic collision
+                        const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+                        const dvn = dvx * nx + dvy * ny;
+
+                        if (dvn > 0) {
+                            const effB = isBallCollision
+                                ? P.bounce * 1.5  // ボールは強く反発
+                                : (P.bounce * typeProps(a.type).bounce + P.bounce * typeProps(b.type).bounce) / 2;
+                            const imp = (1 + effB) * dvn / totalMass;
+                            a.vx -= imp * b.mass * nx;
+                            a.vy -= imp * b.mass * ny;
+                            b.vx += imp * a.mass * nx;
+                            b.vy += imp * a.mass * ny;
+
+                            // ボールは追加の反発力
+                            if (isBallCollision) {
+                                const repel = 3.0;
+                                a.vx -= nx * repel;
+                                a.vy -= ny * repel;
+                                b.vx += nx * repel;
+                                b.vy += ny * repel;
+                            }
+
+                            a.rotV += (nx + ny) * 0.5;
+                            b.rotV -= (nx + ny) * 0.5;
+                        }
+                    }
+                }
+            }
+
+            // Remove merged bodies
+            if (toRemove.size > 0) {
+                const sorted = [...toRemove].sort((a, b) => b - a);
+                for (const idx of sorted) bodies.splice(idx, 1);
+            }
+        }
 
         // ── Animate ────────────────────────────────────────────
+        let colorTime = 0;
+
         function animate(t) {
-            const time = t / 1000;
-            const { float, rotate, color: colorSpd } = P;
+            colorTime = t / 1000;
 
-            eggMeshes.forEach(e => {
-                const d = e.userData;
-                e.position.y = d.baseY + Math.sin(time * d.speed * float + d.phase) * (0.5 + float * 0.5);
-                e.position.x = d.baseX + Math.sin(time * d.speed * 0.5 * float + d.phase) * 0.4;
-                e.rotation.y += d.rotSpeed * rotate * 0.015;
-                e.rotation.x = Math.sin(time * 0.4 + d.phase) * 0.15;
+            // Multiple sub-steps for stability
+            for (let s = 0; s < 3; s++) physicsStep();
 
-                // Per-egg color shift
-                if (colorSpd > 0) {
-                    const hue = (time * colorSpd * 0.05 + d.phase / Math.PI / 2) % 1;
-                    e.material.color.setHSL(hue, 0.7, 0.65);
+            // Sync meshes
+            for (const b of bodies) {
+                if (!b.mesh) continue;
+                b.mesh.position.x = b.x;
+                b.mesh.position.y = b.y;
+                b.mesh.rotation.z = b.rot;
+
+                if (b.type === 'bubble') {
+                    b.mesh.material.opacity = 0.25 + Math.sin(colorTime * 2 + b.phase) * 0.1;
+                    b.mesh.material.color.setHSL(
+                        (colorTime * 0.1 + b.phase / Math.PI / 2) % 1, 0.6, 0.7
+                    );
+                } else if (b.type === 'ball') {
+                    b.mesh.material.color.setHSL(
+                        (colorTime * 0.15 + b.phase / Math.PI / 2) % 1, 0.8, 0.55
+                    );
+                } else {
+                    // egg - subtle
+                    b.mesh.material.color.setHSL(
+                        (0.08 + Math.sin(colorTime * 0.3 + b.phase) * 0.05), 0.5, 0.75
+                    );
                 }
-            });
+            }
 
-            // Camera
-            camera.position.x = Math.sin(time * 0.25) * 0.6;
-            camera.position.y = 2 + Math.sin(time * 0.15) * 0.6;
-            camera.lookAt(0, 0, 0);
+            // Camera sway
+            camera.position.x = Math.sin(colorTime * 0.2) * 0.5;
+            camera.position.y = 1 + Math.sin(colorTime * 0.15) * 0.4;
 
             // Background
-            if (colorSpd > 0) {
-                const hue = (time * colorSpd * 0.02) % 1;
-                scene.background.setHSL(hue, 0.35, 0.06);
-                pl.color.setHSL((hue + 0.5) % 1, 0.8, 0.5);
-            }
+            scene.background.setHSL((colorTime * 0.015) % 1, 0.3, 0.05);
+            pl.color.setHSL((colorTime * 0.03 + 0.5) % 1, 0.7, 0.5);
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
         requestAnimationFrame(animate);
 
-        // ── Param binding ──────────────────────────────────────
-        window.onParam = function() {
-            const keys = ['count', 'size', 'float', 'rotate', 'color', 'particle'];
-            keys.forEach(k => {
-                const el = document.getElementById('s-' + k);
-                const vEl = document.getElementById('v-' + k);
-                P[k] = parseFloat(el.value);
-                vEl.textContent = k === 'count' || k === 'particle' ? Math.round(P[k]) : P[k].toFixed(1);
-            });
-            buildScene();
+        // ── UI ─────────────────────────────────────────────────
+        window.setType = function(el) {
+            objType = el.dataset.type;
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            spawnBodies();
+            toast(el.textContent.trim() + 'に変更');
         };
 
-        // ── Panel toggle ───────────────────────────────────────
+        window.onParam = function() {
+            const keys = ['count', 'gravity', 'bounce', 'friction', 'wind', 'size'];
+            let needRespawn = false;
+            keys.forEach(k => {
+                const el = document.getElementById('s-' + k);
+                const v = parseFloat(el.value);
+                const vEl = document.getElementById('v-' + k);
+                if (k === 'count') { vEl.textContent = Math.round(v); if (P.count !== Math.round(v)) needRespawn = true; }
+                else vEl.textContent = v.toFixed(k === 'bounce' || k === 'friction' ? 2 : 1);
+                P[k] = v;
+            });
+            if (needRespawn) spawnBodies();
+        };
+
         window.togglePanel = function() {
             document.getElementById('panel').classList.toggle('open');
         };
 
-        // ── Presets ────────────────────────────────────────────
         const presetData = {
-            calm:  { count: 5, size: 1.0, float: 0.4, rotate: 0.2, color: 0.2, particle: 80 },
-            vj:    { count: 8, size: 0.8, float: 1.2, rotate: 1.5, color: 2.0, particle: 200 },
-            rave:  { count: 15, size: 0.5, float: 2.5, rotate: 2.5, color: 3.0, particle: 400 },
-            zen:   { count: 3, size: 1.5, float: 0.2, rotate: 0.1, color: 0.0, particle: 30 },
-            pop:   { count: 10, size: 0.7, float: 1.5, rotate: 1.0, color: 1.5, particle: 150 },
-            dark:  { count: 7, size: 1.2, float: 0.6, rotate: 0.4, color: 0.3, particle: 100 },
+            bounce: { count: 10, gravity: 9.8, bounce: 0.9, friction: 0.1, wind: 0, size: 0.8 },
+            float:  { count: 8, gravity: 1.0, bounce: 0.6, friction: 0.05, wind: 0.5, size: 1.0 },
+            drop:   { count: 15, gravity: 20, bounce: 0.3, friction: 0.5, wind: 0, size: 0.6 },
+            pool:   { count: 20, gravity: 5, bounce: 0.5, friction: 0.8, wind: 0, size: 0.5 },
+            chaos:  { count: 25, gravity: 15, bounce: 0.95, friction: 0.1, wind: 3, size: 0.5 },
+            gentle: { count: 5, gravity: 3, bounce: 0.4, friction: 0.6, wind: 0.2, size: 1.5 },
         };
 
         window.applyPreset = function(name) {
@@ -337,7 +547,7 @@
             onParam();
             document.querySelectorAll('.preset').forEach(el => el.classList.remove('active'));
             event.target.classList.add('active');
-            toast(name.toUpperCase() + ' プリセット');
+            toast(name.toUpperCase());
         };
 
         // ── Recording ──────────────────────────────────────────
@@ -349,7 +559,6 @@
             btn.textContent = '● 録画中...';
             btn.disabled = true;
             bar.style.width = '0%';
-            bar.classList.add('active');
 
             const origW = window.innerWidth, origH = window.innerHeight;
             renderer.setSize(W, H);
@@ -379,18 +588,17 @@
             camera.aspect = origW / origH;
             camera.updateProjectionMatrix();
 
-            bar.classList.remove('active');
             btn.textContent = '● 録画 15s';
             btn.disabled = false;
             document.getElementById('dlBtn').style.display = 'inline-block';
-            toast('録画完了！ ' + (recordedBlob.size / 1024 / 1024).toFixed(1) + 'MB');
+            toast('完了！ ' + (recordedBlob.size / 1024 / 1024).toFixed(1) + 'MB');
         };
 
         window.download = function() {
             if (!recordedBlob) return;
             const a = document.createElement('a');
             a.href = URL.createObjectURL(recordedBlob);
-            a.download = 'egg_' + Date.now() + '.webm';
+            a.download = 'egg_physics_' + Date.now() + '.webm';
             a.click();
         };
 
@@ -398,7 +606,7 @@
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2000);
+            setTimeout(() => t.classList.remove('show'), 1500);
         }
 
         window.addEventListener('resize', () => {
@@ -407,7 +615,6 @@
             camera.updateProjectionMatrix();
         });
 
-        // Open panel on mobile by default
         if (window.innerWidth < 600) document.getElementById('panel').classList.add('open');
     })();
     </script>
