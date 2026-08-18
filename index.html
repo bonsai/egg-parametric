@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egg Parametric - 3D卵デザイナー</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="app">
+        <nav class="topnav">
+            <a href="#/" class="nav-logo">🥚 Egg Parametric</a>
+            <div class="nav-links">
+                <a href="#/" class="nav-link" data-page="design">3Dデザイン</a>
+                <a href="#/video" class="nav-link" data-page="video">動画メーカー</a>
+                <a href="#/export" class="nav-link" data-page="export">エクスポート</a>
+            </div>
+        </nav>
+        <div id="page-container"></div>
+    </div>
+    <canvas id="egg-canvas" style="display:none"></canvas>
+    <script src="/static/three.min.js"></script>
+    <script src="/static/OrbitControls.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
